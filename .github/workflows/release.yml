@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: actions/setup-rust@v1
+        with:
+          rust-version: 'stable'
+          cache: true
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Prepare artifact
+        run: |
+          mkdir staging
+          cp target/release/gnb-envswap.exe staging/gnb-envswap.exe
+        shell: bash
+
+      - name: Archive release
+        run: |
+          cd staging
+          7z a ../gnb-envswap-${{ github.ref_name }}.zip .
+        shell: pwsh
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: gnb-envswap-${{ github.ref_name }}.zip
+          body: |
+            Automated release for ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

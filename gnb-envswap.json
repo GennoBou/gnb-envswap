@@ -1,0 +1,14 @@
+{
+    "_comment": "This is a template for the Scoop manifest. The hash will need to be updated with each new release.",
+    "version": "0.1.0",
+    "description": "A TUI tool to quickly switch environment variables in PowerShell.",
+    "homepage": "https://github.com/gennobou/gnb-envswap",
+    "license": "MIT",
+    "url": "https://github.com/gennobou/gnb-envswap/releases/download/v${version}/gnb-envswap-v${version}.zip",
+    "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bin": "gnb-envswap.exe",
+    "checkver": "github",
+    "autoupdate": {
+        "url": "https://github.com/gennobou/gnb-envswap/releases/download/v${version}/gnb-envswap-v${version}.zip"
+    }
+}
