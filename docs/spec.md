@@ -4,7 +4,7 @@
 
 **gnb-envswap** (ジーエヌビー・エンブスワップ)
 
-* **コマンド名:** `gnb-envswap`
+* **コマンド名:** `gnb-envswap [SUBCOMMAND]`
 * **由来:** 作成者(gennobou) + 環境変数(env) + 交換(swap)
 
 ## 2. 目的
@@ -14,15 +14,23 @@ PowerShellセッションで利用する環境変数を、TUI（テキストベ�
 
 ## 3. 機能
 
-* **設定ファイルの読み込みとマージ:**
+* **設定ファイルの編集 (`edit`サブコマンド):**
+  * `edit local` (または `edit`): ワークディレクトリの `.env.swap.toml` を開く。
+  * `edit global`: ホームディレクトリの `.env.swap.toml` を開く。
+  * ファイルが存在しない場合は空のファイルとして自動作成する。
+  * 編集には、`.toml` ファイルにOSで関連付けられたデフォルトのアプリケーションを使用する。
+  * ファイル作成に失敗した場合は、エラーメッセージを表示して終了する。
+* **設定ファイルの読み込みとマージ (サブコマンドなしの場合):**
 
   * 実行時のワークディレクトリとホームディレクトリの `.env.swap.toml` を順に探索。
   * 両方存在する場合は**ワークディレクトリ側を優先してマージ**するが、
     同一キーが重複しても上書きせず**両方を統合表示**（TUI上で選択肢が増える形）。
-  * どちらも存在しない場合は標準エラー出力にエラーを表示して終了。
-* **インタラクティブTUI:**
+  * どちらも存在しない、または中身が空の場合は、多言語対応のエラーメッセージを標準エラー出力に表示して終了。
+* **インタラクティブTUI (サブコマンドなしの場合):**
 
   * 矢印キーとEnterキーで操作可能。
+  * TUIのウィンドウは、表示する項目数に応じて高さを動的に調整し、画面中央に表示。
+  * TUIの下部には、現在の状況で利用可能な操作キーのヒントを多言語対応で表示。
 * **UIの国際化 (i18n):**
 
   * OSロケールが `ja` で始まる場合（例: `ja_JP.UTF-8`）、UIメッセージを日本語表示。
@@ -57,11 +65,13 @@ PowerShellセッションで利用する環境変数を、TUI（テキストベ�
 
 | ライブラリ名                 | 用途               |
 | :--------------------- | :--------------- |
+| `clap`                 | コマンドライン引数の解析     |
 | `ratatui`, `crossterm` | TUI構築、キー入力、端末制御  |
 | `serde`, `toml`        | 設定ファイルのデシリアライズ   |
 | `dirs`                 | ホームディレクトリ取得      |
 | `sys-locale`           | ロケール判定           |
 | `serde_json`           | i18nメッセージ定義の読み込み |
+| `open`                 | 外部アプリケーションでのファイル表示 |
 
 ---
 
@@ -76,9 +86,12 @@ PowerShellセッションで利用する環境変数を、TUI（テキストベ�
 * **パフォーマンス:** 起動からTUI表示まで1秒以内
 * **ロバスト性:**
 
-  * 設定ファイル未発見または不正時は、標準エラーに明示的エラーを出力し即終了。
+  * 設定ファイルが未発見または空の場合は、多言語対応のローカライズされたエラーメッセージを標準エラー出力に表示して終了。
   * TUI実行中にエラー発生時は速やかに終了し、端末を通常モードに復帰 (`disable_raw_mode`)。
-* **利便性:** キーボード操作のみで完結。
+* **利便性:**
+  * キーボード操作のみで完結。
+  * TUIは項目数に応じて高さを動的に調整し、ターミナル画面を不必要に専有しない。
+  * 状況に応じた操作キーのヒントを常時表示し、マニュアルを参照せずとも直感的な操作を可能にする。
 * **セキュリティ:**
 
   * `.env.swap.toml` はAPIキー等を含むが、機密等級は一般的な開発用`.env`と同等扱いとする。
@@ -96,13 +109,17 @@ PowerShellセッションで利用する環境変数を、TUI（テキストベ�
 
 ### 構成
 
-1. **Config Loader**
+1. **CLI Parser**
+   * `clap` を利用してコマンドライン引数を解析。
+   * `edit` サブコマンドが指定された場合はファイル編集フローを実行し、それ以外の場合はTUIモードを開始する。
+
+2. **Config Loader**
 
    * `dirs::home_dir()` と `std::env::current_dir()` でファイル特定。
    * 双方存在時は「同名キーを統合」してマージ。
    * 存在しない場合はエラー終了。
 
-2. **i18n Manager**
+3. **i18n Manager**
 
    * `sys-locale` でロケールを取得。
    * `starts_with("ja")` で判定。
@@ -178,7 +195,7 @@ value = "localhost"
 
 1. **リポジトリ:**
 
-   * GitHub 公開 (`gennnobou/gnb-envswap`)
+   * GitHub 公開 (`gennobou/gnb-envswap`)
    * `LICENSE` (MIT または Apache-2.0)
    * `README.md`（英）と `README.ja.md`（日）
    * 設計書・企画書を `docs/` に配置
@@ -191,13 +208,13 @@ value = "localhost"
 
 3. **Scoop公開:**
 
-   * 個人Bucket例：`github.com/gennnobou/scoop-bucket`
+   * 個人Bucket例：`github.com/gennobou/scoop-bucket`
    * `gnb-envswap.json` にURL・ハッシュ・`bin`=`"gnb-envswap.exe"` を記述。
    * インストール例：
 
      ```powershell
-     scoop bucket add gennnobou https://github.com/gennnobou/scoop-bucket
-     scoop install gennnobou/gnb-envswap
+     scoop bucket add gennobou https://github.com/gennobou/scoop-bucket
+     scoop install gennobou/gnb-envswap
      ```
 
 
