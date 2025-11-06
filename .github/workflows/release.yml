@@ -21,74 +21,44 @@ env:
   RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
 
 jobs:
-  create-release:
-    name: Create Release
-    runs-on: ubuntu-latest
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-    steps:
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ env.RELEASE_TAG }}
-          release_name: Release ${{ env.RELEASE_TAG }}
-          draft: false
-          prerelease: false
-
-  build-and-package:
-    name: Build and Upload
-    needs: create-release
+  build-and-release:
+    name: Build and Release
     runs-on: windows-latest
     outputs:
-      asset_name: ${{ steps.package.outputs.asset_name }}
-      asset_path: ${{ steps.package.outputs.asset_path }}
       asset_sha256: ${{ steps.package.outputs.asset_sha256 }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+
       - name: Build
         run: cargo build --release
+
       - name: Package and Hash
         id: package
         shell: pwsh
         run: |
           $version = "${{ env.RELEASE_TAG }}".TrimStart('v')
-          $assetName = "gnb-envswap-v$version.zip"
-          $exePath = "./target/release/gnb-envswap.exe"
-          $zipPath = "./$assetName"
-
-          # Create a temporary directory for zipping
-          mkdir staging
-          cp $exePath staging/gnb-envswap.exe
-
-          # Create zip archive
-          7z a -tzip $zipPath ./staging/*
-
-          # Calculate SHA256 hash
-          $hash = (Get-FileHash $zipPath -Algorithm SHA256).Hash.ToLower()
-
-          echo "asset_name=$assetName" >> $env:GITHUB_OUTPUT
-          echo "asset_path=$zipPath" >> $env:GITHUB_OUTPUT
+          $asset_name = "gnb-envswap-v$version.zip"
+          $asset_path = "./$asset_name"
+          7z a -tzip $asset_path ./target/release/gnb-envswap.exe
+          $hash = (Get-FileHash $asset_path -Algorithm SHA256).Hash.ToLower()
+          echo "asset_path=$asset_path" >> $env:GITHUB_OUTPUT
           echo "asset_sha256=$hash" >> $env:GITHUB_OUTPUT
 
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
+      - name: Create Release and Upload Asset
+        uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ${{ steps.package.outputs.asset_path }}
-          asset_name: ${{ steps.package.outputs.asset_name }}
-          asset_content_type: application/octet-stream
+          tag_name: ${{ env.RELEASE_TAG }}
+          files: ${{ steps.package.outputs.asset_path }}
 
   update-scoop-bucket:
     name: Update Scoop Bucket
-    needs: build-and-package
+    needs: build-and-release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout gnb-envswap Repository
@@ -106,9 +76,8 @@ jobs:
       - name: Generate and Update Manifest
         run: |
           VERSION=${RELEASE_TAG#v}
-          ASSET_NAME="${{ needs.build-and-package.outputs.asset_name }}"
-          ASSET_SHA256="${{ needs.build-and-package.outputs.asset_sha256 }}"
-          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${{ env.RELEASE_TAG }}/${ASSET_NAME}"
+          ASSET_SHA256="${{ needs.build-and-release.outputs.asset_sha256 }}"
+          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${{ env.RELEASE_TAG }}/gnb-envswap-v${VERSION}.zip"
 
           # jq を使用してJSONマニフェストを更新
           jq \
