@@ -105,7 +105,7 @@ jobs:
 
       - name: Generate and Update Manifest
         run: |
-          VERSION="${{ env.RELEASE_TAG }}".replace("v", "")
+          VERSION=${RELEASE_TAG#v}
           ASSET_NAME="${{ needs.build-and-package.outputs.asset_name }}"
           ASSET_SHA256="${{ needs.build-and-package.outputs.asset_sha256 }}"
           DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${{ env.RELEASE_TAG }}/${ASSET_NAME}"
