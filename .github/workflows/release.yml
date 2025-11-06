@@ -3,46 +3,111 @@ name: Release
 on:
   push:
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
 
 jobs:
-  release:
+  create-release:
     name: Create Release
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
 
+  build-and-package:
+    name: Build and Upload
+    needs: create-release
+    runs-on: windows-latest
+    outputs:
+      asset_name: ${{ steps.package.outputs.asset_name }}
+      asset_path: ${{ steps.package.outputs.asset_path }}
+      asset_sha256: ${{ steps.package.outputs.asset_sha256 }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Setup Rust
-        uses: actions/setup-rust@v1
-        with:
-          rust-version: 'stable'
-          cache: true
-
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
       - name: Build
         run: cargo build --release
-
-      - name: Prepare artifact
-        run: |
-          mkdir staging
-          cp target/release/gnb-envswap.exe staging/gnb-envswap.exe
-        shell: bash
-
-      - name: Archive release
-        run: |
-          cd staging
-          7z a ../gnb-envswap-${{ github.ref_name }}.zip .
+      - name: Package and Hash
+        id: package
         shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          $assetName = "gnb-envswap-v$version.zip"
+          $exePath = "./target/release/gnb-envswap.exe"
+          $zipPath = "./$assetName"
 
-      - name: Create Release
-        id: create_release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: gnb-envswap-${{ github.ref_name }}.zip
-          body: |
-            Automated release for ${{ github.ref_name }}
-          draft: false
-          prerelease: false
+          # Create a temporary directory for zipping
+          mkdir staging
+          cp $exePath staging/gnb-envswap.exe
+
+          # Create zip archive
+          7z a -tzip $zipPath ./staging/*
+
+          # Calculate SHA256 hash
+          $hash = (Get-FileHash $zipPath -Algorithm SHA256).Hash.ToLower()
+
+          echo "asset_name=$assetName" >> $env:GITHUB_OUTPUT
+          echo "asset_path=$zipPath" >> $env:GITHUB_OUTPUT
+          echo "asset_sha256=$hash" >> $env:GITHUB_OUTPUT
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ${{ steps.package.outputs.asset_path }}
+          asset_name: ${{ steps.package.outputs.asset_name }}
+          asset_content_type: application/octet-stream
+
+  update-scoop-bucket:
+    name: Update Scoop Bucket
+    needs: build-and-package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout gnb-envswap Repository
+        uses: actions/checkout@v4
+        with:
+          path: gnb-envswap # メインリポジトリをチェックアウトしてgnb-envswap.jsonテンプレートにアクセス
+
+      - name: Checkout Scoop Bucket Repository
+        uses: actions/checkout@v4
+        with:
+          repository: GennoBou/scoop-bucket
+          token: ${{ secrets.BUCKET_PAT }}
+          path: scoop-bucket # Scoopバケットリポジトリをチェックアウト
+
+      - name: Generate and Update Manifest
+        run: |
+          VERSION="${{ github.ref_name }}".replace("v", "")
+          ASSET_NAME="${{ needs.build-and-package.outputs.asset_name }}"
+          ASSET_SHA256="${{ needs.build-and-package.outputs.asset_sha256 }}"
+          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/${ASSET_NAME}"
+
+          # jq を使用してJSONマニフェストを更新
+          jq \
+            --arg version "$VERSION" \
+            --arg url "$DOWNLOAD_URL" \
+            --arg hash "$ASSET_SHA256" \
+            '.version = $version | .url = $url | .hash = $hash | .autoupdate.url = $url' \
+            gnb-envswap/gnb-envswap.json > scoop-bucket/bucket/gnb-envswap.json
+
+      - name: Commit and Push to Scoop Bucket
+        run: |
+          cd scoop-bucket
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add bucket/gnb-envswap.json
+          git commit -m "Update gnb-envswap to v${{ github.ref_name }}" || echo "No changes to commit"
+          git push
