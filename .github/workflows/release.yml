@@ -4,9 +4,21 @@ on:
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'The tag to create a release for (e.g., v0.1.0)'
+        required: true
+        type: string
 
 permissions:
   contents: write
+
+env:
+  # Set the release tag based on the trigger event
+  # For manual trigger (workflow_dispatch), use the input.
+  # For tag push, use the git ref name.
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
 
 jobs:
   create-release:
@@ -21,8 +33,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
+          tag_name: ${{ env.RELEASE_TAG }}
+          release_name: Release ${{ env.RELEASE_TAG }}
           draft: false
           prerelease: false
 
@@ -45,7 +57,7 @@ jobs:
         id: package
         shell: pwsh
         run: |
-          $version = "${{ github.ref_name }}".TrimStart('v')
+          $version = "${{ env.RELEASE_TAG }}".TrimStart('v')
           $assetName = "gnb-envswap-v$version.zip"
           $exePath = "./target/release/gnb-envswap.exe"
           $zipPath = "./$assetName"
@@ -93,10 +105,10 @@ jobs:
 
       - name: Generate and Update Manifest
         run: |
-          VERSION="${{ github.ref_name }}".replace("v", "")
+          VERSION="${{ env.RELEASE_TAG }}".replace("v", "")
           ASSET_NAME="${{ needs.build-and-package.outputs.asset_name }}"
           ASSET_SHA256="${{ needs.build-and-package.outputs.asset_sha256 }}"
-          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/${ASSET_NAME}"
+          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${{ env.RELEASE_TAG }}/${ASSET_NAME}"
 
           # jq を使用してJSONマニフェストを更新
           jq \
@@ -112,5 +124,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add bucket/gnb-envswap.json
-          git commit -m "Update gnb-envswap to v${{ github.ref_name }}" || echo "No changes to commit"
+          git commit -m "Update gnb-envswap to ${{ env.RELEASE_TAG }}" || echo "No changes to commit"
           git push
