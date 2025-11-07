@@ -2,9 +2,10 @@
 
 ## 1. プログラムの名称
 
-**gnb-envswap** (ジーエヌビー・エンブスワップ)
+**gnb-envswap** (ジーエヌビー・エンブスワップ) と、そのラッパー関数 **envswap**
 
-* **コマンド名:** `gnb-envswap [SUBCOMMAND]`
+* **実行ファイル名:** `gnb-envswap.exe`
+* **推奨コマンド (PowerShell):** `envswap`
 * **由来:** 作成者(gennobou) + 環境変数(env) + 交換(swap)
 
 ## 2. 目的
@@ -48,9 +49,9 @@ PowerShellセッションで利用する環境変数を、TUI（テキストベ�
 * **値の非表示:**
   値（APIキーなど）は画面に一切表示しない。
 * **PowerShellコマンド出力:**
-  選択後、`$Env:VAR_NAME = 'value'` 形式で標準出力に出力。
-  値に `'` が含まれる場合は `'"'` で囲むなど、`.env` 形式と同等のエスケープルールに準拠する。
-  （`dotenvy` や `envfile` と同じ文字列処理基準）
+  * 選択後、`$Env:VAR_NAME = 'value'` 形式のPowerShellコマンドを標準出力に出力する。
+  * この出力を `Invoke-Expression` にパイプすることで、現在のシェルセッションに環境変数が適用される (`gnb-envswap | Invoke-Expression`)。
+  * 値に `'` が含まれる場合は `'"'` で囲むなど、`.env` 形式と同等のエスケープルールに準拠する。（`dotenvy` や `envfile` と同じ文字列処理基準）
 
 ## 4. 開発言語
 
@@ -66,6 +67,8 @@ PowerShellセッションで利用する環境変数を、TUI（テキストベ�
 * **OS:** Windows 10 / 11
 * **シェル:** PowerShell 5.1 / 7.x
 * **配布:** Scoop
+  * Scoopでのインストール時 (`post_install`) に、`$PROFILE` へ `function envswap { gnb-envswap | Invoke-Expression }` というラッパー関数を自動的に登録する。
+  * アンインストール時 (`post_uninstall`) には、上記関数を自動的に削除する。
 
 ## 6. 主要ライブラリ (Rust)
 

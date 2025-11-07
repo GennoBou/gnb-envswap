@@ -44,31 +44,27 @@ scoop install gennobou/gnb-envswap
     value = "localhost"
     ```
 
-2.  **Run in PowerShell:**
+2.  **Run `envswap` in PowerShell:**
 
-    Execute `gnb-envswap` in your PowerShell terminal. It will present a TUI to select an environment variable.
+    If you installed with Scoop, a convenient `envswap` function is automatically added to your PowerShell profile. Just run `envswap`:
 
     ```powershell
-    gnb-envswap
+    envswap
     ```
 
-3.  **Select and Apply:**
+    This will open the TUI. Use the arrow keys to navigate and `Enter` to select. After choosing a variable and a value, the environment variable will be set in your current session.
 
-    Use the arrow keys to navigate and `Enter` to select. After choosing a variable and a value, the tool will output a PowerShell command. To apply it to your current session, use `Invoke-Expression`.
+    **How it works (and manual setup):**
+
+    The `envswap` function is a simple wrapper that executes `gnb-envswap | Invoke-Expression`. The `gnb-envswap` command itself outputs a PowerShell command to set the variable, and `Invoke-Expression` applies it.
+
+    If you didn't install with Scoop, you can use the tool by running the full command:
 
     ```powershell
     gnb-envswap | Invoke-Expression
     ```
 
-    You might want to create a PowerShell function for convenience:
-
-    ```powershell
-    function envswap {
-        gnb-envswap | Invoke-Expression
-    }
-    ```
-
-    Now you can just run `envswap`.
+    Or, you can add the `envswap` function to your PowerShell profile (`$PROFILE`) manually for convenience.
 
 ### `show` Subcommand
 

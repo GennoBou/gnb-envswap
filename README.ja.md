@@ -44,31 +44,27 @@ scoop install gennobou/gnb-envswap
     value = "localhost"
     ```
 
-2.  **PowerShellで実行:**
+2.  **PowerShellで `envswap` を実行:**
 
-    PowerShellターミナルで `gnb-envswap` を実行すると、環境変数を選択するためのTUIが表示されます。
+    Scoopでインストールした場合、便利な `envswap` 関数がPowerShellプロファイルに自動で追加されます。ターミナルで `envswap` を実行してください。
 
     ```powershell
-    gnb-envswap
+    envswap
     ```
 
-3.  **選択と適用:**
+    TUIが起動したら、矢印キーで移動し、`Enter`キーで選択します。変数と値を選ぶと、現在のPowerShellセッションに環境変数が適用されます。
 
-    矢印キーで移動し、`Enter`キーで選択します。変数と値を選ぶと、ツールはPowerShellコマンドを標準出力します。これを現在のセッションに適用するには、`Invoke-Expression` を使います。
+    **仕組み（と手動設定の方法）:**
+
+    `envswap` 関数は、内部で `gnb-envswap | Invoke-Expression` を実行するラッパーです。`gnb-envswap` コマンドは変数を設定するためのPowerShellコマンドを生成し、それを `Invoke-Expression` が実行することで設定が適用されます。
+
+    Scoopを使わずにインストールした場合は、以下のコマンドで直接利用できます。
 
     ```powershell
     gnb-envswap | Invoke-Expression
     ```
 
-    毎回入力するのが面倒な場合は、PowerShellの関数として登録しておくと便利です。
-
-    ```powershell
-    function envswap {
-        gnb-envswap | Invoke-Expression
-    }
-    ```
-
-    これで、`envswap` を実行するだけでよくなります。
+    また、利便性のために `envswap` 関数を自分でPowerShellプロファイル（`$PROFILE`）に登録することも可能です。
 
 ### `show` サブコマンド
 
