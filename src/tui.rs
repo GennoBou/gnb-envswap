@@ -213,8 +213,9 @@ fn draw(frame: &mut ratatui::Frame, app: &mut App) {
 
 /// Helper function to create a centered rect.
 fn centered_rect(percent_x: u16, height: u16, r: Rect) -> Rect {
-    // Ensure that the height and percent_x are within reasonable bounds.
+    // Ensure that the height does not exceed the available area's height.
     let height = height.min(r.height);
+    // Ensure that the percentage for width does not exceed 100.
     let percent_x = percent_x.min(100);
 
     let popup_width = r.width * percent_x / 100;
