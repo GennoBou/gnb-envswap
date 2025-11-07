@@ -70,6 +70,22 @@ scoop install gennobou/gnb-envswap
 
     Now you can just run `envswap`.
 
+### `show` Subcommand
+
+The `show` subcommand is used to check the current status of the environment variables defined in your configuration file. All output is sent to `stderr` to prevent accidental piping to `Invoke-Expression`.
+
+```powershell
+# Display the current status (values are masked)
+gnb-envswap show
+```
+
+Example output:
+```
+API_KEY: Development Server 🚀
+DB_HOST: not set
+SECRET_TOKEN: <custom value>
+```
+
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.

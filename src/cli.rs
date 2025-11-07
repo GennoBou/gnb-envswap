@@ -12,6 +12,8 @@ pub struct Cli {
 pub enum Commands {
     /// Edit a configuration file. Defaults to the local file.
     Edit(EditArgs),
+    /// Show the current status of environment variables.
+    Show(ShowArgs),
 }
 
 #[derive(Parser, Debug)]
@@ -25,4 +27,11 @@ pub struct EditArgs {
 pub enum EditTarget {
     Local,
     Global,
+}
+
+#[derive(Parser, Debug)]
+pub struct ShowArgs {
+    /// Reveal the actual values of the environment variables.
+    #[arg(long)]
+    pub reveal: bool,
 }

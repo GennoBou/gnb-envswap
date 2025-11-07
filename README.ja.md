@@ -70,6 +70,22 @@ scoop install gennobou/gnb-envswap
 
     これで、`envswap` を実行するだけでよくなります。
 
+### `show` サブコマンド
+
+`show` サブコマンドは、設定ファイルに定義された環境変数の現在の状態を確認するために使用します。
+
+```powershell
+# 現在の状態を表示（値はマスクされます）
+gnb-envswap show
+```
+
+出力例:
+```
+API_KEY: 開発サーバー 🚀
+DB_HOST: 未設定
+SECRET_TOKEN: 設定外の値
+```
+
 ## ライセンス
 
 このプロジェクトはMITライセンスの下で公開されています。詳細は [LICENSE](LICENSE) ファイルをご覧ください。

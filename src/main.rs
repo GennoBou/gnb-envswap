@@ -9,7 +9,7 @@ use std::{env, fs};
 
 use app::App;
 use clap::Parser;
-use cli::{Cli, Commands, EditTarget};
+use cli::{Cli, Commands, EditTarget, ShowArgs};
 use i18n::I18nMessages;
 
 fn main() -> std::io::Result<()> {
@@ -29,6 +29,10 @@ fn main() -> std::io::Result<()> {
         match command {
             Commands::Edit(args) => {
                 handle_edit_command(args.target, &messages);
+                return Ok(());
+            }
+            Commands::Show(args) => {
+                handle_show_command(args, &messages);
                 return Ok(());
             }
         }
@@ -105,5 +109,59 @@ fn handle_edit_command(target: EditTarget, messages: &I18nMessages) {
         // This case should be rare (e.g., home directory not found).
         eprintln!("Could not determine the path for the configuration file.");
         std::process::exit(1);
+    }
+}
+
+/// Handles the `show` subcommand logic.
+fn handle_show_command(args: ShowArgs, messages: &I18nMessages) {
+    let config = match config::load_config() {
+        Ok(config) => config,
+        Err(err) => {
+            if err.contains("No .env.swap.toml file found") {
+                eprintln!("{}", messages.get("config_not_found"));
+            }
+            eprintln!("Error: {}", err);
+            std::process::exit(1);
+        }
+    };
+
+    if config.is_empty() {
+        eprintln!("{}", messages.get("config_not_found"));
+        std::process::exit(1);
+    }
+
+    let mut keys: Vec<_> = config.keys().cloned().collect();
+    keys.sort();
+
+    for key in keys {
+        let current_value = env::var(&key);
+        let status = match current_value {
+            Ok(val) => {
+                if args.reveal {
+                    val
+                } else {
+                    config
+                        .get(&key)
+                        .unwrap()
+                        .values
+                        .iter()
+                        .find(|v| v.value == val)
+                        .map_or_else(|| format!("({})", messages.get("status_custom_value")), |v| format!("<{}>", v.label))
+                }
+            }
+            Err(_) => {
+                if args.reveal {
+                    "".to_string() // Show empty if not set and revealing
+                } else {
+                    format!("({})", messages.get("status_not_set"))
+                }
+            }
+        };
+        eprintln!("{}: {}", key, status);
+    }
+
+    if !args.reveal {
+        eprintln!();
+        eprintln!("{}", messages.get("show_reveal_hint"));
     }
 }
