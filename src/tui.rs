@@ -11,34 +11,34 @@ use ratatui::{
     widgets::{Block, Borders, Clear, List, ListItem, Paragraph},
     Terminal,
 };
-use std::io::{self, stdout, Stdout};
+use std::io::{self, stderr, Stderr};
 use std::time::Duration;
 
 use crate::app::{App, SelectionPhase};
 
 // A wrapper around the ratatui Terminal.
 pub struct Tui {
-    terminal: Terminal<CrosstermBackend<Stdout>>,
+    terminal: Terminal<CrosstermBackend<Stderr>>,
 }
 
 impl Tui {
     // Constructor for Tui.
     pub fn new() -> io::Result<Self> {
-        let terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
+        let terminal = Terminal::new(CrosstermBackend::new(stderr()))?;
         Ok(Self { terminal })
     }
 
     // Initialize the terminal for TUI display.
     pub fn enter(&self) -> io::Result<()> {
         enable_raw_mode()?;
-        stdout().execute(EnterAlternateScreen)?;
+        stderr().execute(EnterAlternateScreen)?;
         Ok(())
     }
 
     // Restore the terminal to its original state.
     fn exit(&self) -> io::Result<()> {
         disable_raw_mode()?;
-        stdout().execute(LeaveAlternateScreen)?;
+        stderr().execute(LeaveAlternateScreen)?;
         Ok(())
     }
 }
