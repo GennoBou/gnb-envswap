@@ -2,25 +2,29 @@
   "en": {
     "select_variable": "Select an environment variable",
     "select_value": "Select a value",
-    "quit": "Press 'q' to quit",
+    "quit": "Esc: Quit",
     "config_not_found": "Configuration file (.env.swap.toml) not found or is empty.",
-    "key_hint_variable_selection": "↑↓/jk: Move | Enter: Select | q/Esc: Quit",
-    "key_hint_value_selection": "↑↓/jk: Move | Enter: Confirm | Esc: Back | q: Quit",
+    "key_hint_variable_selection": "Type to search | ↑↓: Move | Enter: Select | Esc: Quit",
+    "key_hint_value_selection": "Type to search | ↑↓: Move | Enter: Confirm | Esc: Back",
     "file_creation_failed": "Failed to create file at: {path}",
     "status_not_set": "not set",
     "status_custom_value": "<custom value>",
-    "show_reveal_hint": "To display actual values, use \"gnb-envswap show --reveal\""
+    "show_reveal_hint": "To display actual values, use \"gnb-envswap show --reveal\"",
+    "search_placeholder": "Search: ",
+    "no_results": "No results found."
   },
   "ja": {
     "select_variable": "環境変数を選択してください",
     "select_value": "値を選択してください",
-    "quit": "'q'で終了",
+    "quit": "Escで終了",
     "config_not_found": "設定ファイル (.env.swap.toml) が見つからないか、空です。",
-    "key_hint_variable_selection": "↑↓/jk: 移動 | Enter: 選択 | q/Esc: 終了",
-    "key_hint_value_selection": "↑↓/jk: 移動 | Enter: 確定 | Esc: 戻る | q: 終了",
+    "key_hint_variable_selection": "文字入力で検索 | ↑↓: 移動 | Enter: 選択 | Esc: 終了",
+    "key_hint_value_selection": "文字入力で検索 | ↑↓: 移動 | Enter: 確定 | Esc: 戻る",
     "file_creation_failed": "ファイルの作成に失敗しました: {path}",
     "status_not_set": "未設定",
     "status_custom_value": "設定外の値",
-    "show_reveal_hint": "実際の値を表示する場合は \"gnb-envswap show --reveal\" を使用してください"
+    "show_reveal_hint": "実際の値を表示する場合は \"gnb-envswap show --reveal\" を使用してください",
+    "search_placeholder": "検索: ",
+    "no_results": "該当する項目がありません"
   }
 }

@@ -7,8 +7,10 @@ English | [日本語](./README.ja.md)
 ## Features
 
 -   **Interactive TUI:** A user-friendly interface for selecting environment variables and their values.
--   **Configuration via TOML:** Define your environment variable sets in a simple `.env.swap.toml` file.
--   **Fast and Built with Rust:** A single, lightweight executable built with Rust.
+-   **Real-time Search:** Instantly filter variables and values by simply typing in the TUI.
+-   **Configuration via TOML:** Define your environment variable sets in a `.env.swap.toml` file.
+-   **Smart Merging:** Automatically merges local (workspace) and global (home) configurations, clearly distinguishing them with `<Work>` and `<Home>` colored prefixes.
+-   **Fast and Built with Rust:** A single, lightweight executable built with Rust 2024 Edition.
 -   **i18n Support:** UI messages are available in English and Japanese (auto-detected from your OS locale).
 
 ## Installation
@@ -25,24 +27,7 @@ scoop install gennobou/gnb-envswap
 ## Usage
 
 1.  **Create a Configuration File:**
-
-    Create a file named `.env.swap.toml` in your project's root directory or your home directory (`~`).
-
-    ```toml
-    [API_KEY]
-    [[API_KEY.values]]
-    label = "Development Server 🚀"
-    value = "dev_api_key_xxxxxxxxx"
-
-    [[API_KEY.values]]
-    label = "Production Server"
-    value = "prod_api_key_yyyyyyyy"
-
-    [DB_HOST]
-    [[DB_HOST.values]]
-    label = "Local Database"
-    value = "localhost"
-    ```
+    Create a `.env.swap.toml` file. For detailed configuration options and how local/global merging works, please see the [Configuration Reference](docs/configuration.md).
 
 2.  **Run `envswap` in PowerShell:**
 
@@ -52,7 +37,11 @@ scoop install gennobou/gnb-envswap
     envswap
     ```
 
-    This will open the TUI. Use the arrow keys to navigate and `Enter` to select. After choosing a variable and a value, the environment variable will be set in your current session.
+    This will open the TUI. 
+    *   **Type letters** to search/filter the list.
+    *   Use the **Up/Down arrow keys** to navigate (the list loops!).
+    *   Press **Enter** to select.
+    *   Press **Esc** to go back or quit.
 
     **How it works (and manual setup):**
 
