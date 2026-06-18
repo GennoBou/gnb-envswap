@@ -11,13 +11,11 @@ on:
         required: true
         type: string
 
+# ジョブレベルで必要な権限を絞る
 permissions:
   contents: write
 
 env:
-  # Set the release tag based on the trigger event
-  # For manual trigger (workflow_dispatch), use the input.
-  # For tag push, use the git ref name.
   RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
 
 jobs:
@@ -26,12 +24,16 @@ jobs:
     runs-on: windows-latest
     outputs:
       asset_sha256: ${{ steps.package.outputs.asset_sha256 }}
+      asset_path: ${{ steps.package.outputs.asset_path }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
 
       - name: Build
         run: cargo build --release
@@ -49,12 +51,12 @@ jobs:
           echo "asset_sha256=$hash" >> $env:GITHUB_OUTPUT
 
       - name: Create Release and Upload Asset
-        uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ env.RELEASE_TAG }}
-          files: ${{ steps.package.outputs.asset_path }}
+        shell: pwsh
+        run: |
+          # Use GitHub CLI to avoid Node.js deprecation warnings from third-party actions
+          gh release create "${{ env.RELEASE_TAG }}" "${{ steps.package.outputs.asset_path }}" --title "Release ${{ env.RELEASE_TAG }}" --generate-notes
 
   update-scoop-bucket:
     name: Update Scoop Bucket
@@ -64,14 +66,14 @@ jobs:
       - name: Checkout gnb-envswap Repository
         uses: actions/checkout@v4
         with:
-          path: gnb-envswap # メインリポジトリをチェックアウトしてgnb-envswap.jsonテンプレートにアクセス
+          path: gnb-envswap
 
       - name: Checkout Scoop Bucket Repository
         uses: actions/checkout@v4
         with:
           repository: GennoBou/scoop-bucket
           token: ${{ secrets.BUCKET_PAT }}
-          path: scoop-bucket # Scoopバケットリポジトリをチェックアウト
+          path: scoop-bucket
 
       - name: Generate and Update Manifest
         run: |
@@ -79,12 +81,11 @@ jobs:
           ASSET_SHA256="${{ needs.build-and-release.outputs.asset_sha256 }}"
           DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${{ env.RELEASE_TAG }}/gnb-envswap-v${VERSION}.zip"
 
-          # jq を使用してJSONマニフェストを更新
           jq \
             --arg version "$VERSION" \
             --arg url "$DOWNLOAD_URL" \
             --arg hash "$ASSET_SHA256" \
-            '.version = $version | .url = $url | .hash = $hash | .autoupdate.url = $url' \
+            '.version = $version | .architecture."64bit".url = $url | .architecture."64bit".hash = $hash | .autoupdate.architecture."64bit".url = $url' \
             gnb-envswap/gnb-envswap.json > scoop-bucket/bucket/gnb-envswap.json
 
       - name: Commit and Push to Scoop Bucket
